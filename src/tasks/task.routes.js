@@ -11,7 +11,7 @@ import {  } from "../common/middlewares/validate-fields.js";
 const router = Router();
 
 
-
+router.get("/", taskGet)
 
 router.post(
     "/",
