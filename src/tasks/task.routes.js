@@ -1,45 +1,61 @@
 import { Router } from "express";
 import { check } from "express-validator";
-
-import { taskDelete, taskGet, taskPost, taskUpdate } from "./task.controller.js";
-
-import { tasksExist } from "../common/helpers/db-validators.js";
-import {} from "../common/middlewares/validate-fields.js";
+import { existTaskById, tasksExist } from "../common/helpers/db-validators.js";
+import { validateFields } from "../common/middlewares/validate-fields.js";
+import {
+  completeTask,
+  createTask,
+  deleteTask,
+  editTask,
+  listTasks,
+} from "./task.controller.js";
 
 const router = Router();
 
-router.get("/", taskGet);
+router.get("/", listTasks);
 
 router.post(
   "/",
   [
+    check("name", "name is required").not().isEmpty(),
     check("name").custom(tasksExist),
-    check("name", "El nombre es obligatorio").not().isEmpty(),
-    check("description", "Description is required").not().isEmpty(),
-    check("startDate", "startDate is required").not().isEmpty(),
-    check("endDate", "endDate is required").not().isEmpty(),
-    check("creator_name", "The creator is required").not().isEmpty(),
+    check("description", "description is required").not().isEmpty(),
+    check("endDate", "end date is required").not().isEmpty(),
+    check("creator_name", "The creator name is required").not().isEmpty(),
+    validateFields,
   ],
-  taskPost
+  createTask
 );
 
 router.put(
-  "/:id", 
+  "/:id",
   [
     check("id", "The id is not valid").isMongoId(),
-    check("Creator_name").optional(), 
+    check("id").custom(existTaskById),
+    check("name").custom(tasksExist),
+    validateFields,
   ],
-  taskUpdate
+  editTask
 );
 
+router.patch(
+  "/:id",
+  [
+    check("id", "The id is not valid").isMongoId(),
+    check("id").custom(existTaskById),
+    validateFields,
+  ],
+  completeTask
+);
 
 router.delete(
   "/:id",
   [
-    check("id", "The id is required").not().isEmpty(),
-    check("creador", "The Creator_Name is required").not().isEmpty(),
+    check("id", "The id is not valid").isMongoId(),
+    check("id").custom(existTaskById),
+    validateFields,
   ],
-  taskDelete
+  deleteTask
 );
 
 export default router;

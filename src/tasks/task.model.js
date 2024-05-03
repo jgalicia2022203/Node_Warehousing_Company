@@ -19,7 +19,7 @@ const taskSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["complete", "incomplete"],
+    enum: ["complete", "incomplete", "deleted"],
     default: "incomplete",
   },
   creator_name: {
@@ -27,5 +27,11 @@ const taskSchema = new mongoose.Schema({
     required: true,
   },
 });
+
+taskSchema.methods.toJSON = function () {
+  const task = this.toObject();
+  delete task.__v;
+  return task;
+};
 
 export default mongoose.model("Task", taskSchema);

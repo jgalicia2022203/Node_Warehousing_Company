@@ -1,81 +1,100 @@
-"strick";
-
-import { response, request } from "express";
+import { request, response } from "express";
 import Tasks from "./task.model.js";
 
-export const taskGet = async (req = request, res = response) => {
-  const { limite, desde } = req.params;
-  const query = { status: "incomplete" };
-
-  const [total, tasks] = await Promise.all([
-    Tasks.countDocuments(query),
-    Tasks.find(query).skip(Number(desde)).limit(Number(limite)),
-  ]);
-
-  res.status(200).json({
-    total,
-    tasks,
-  });
-};
-
-export const taskPost = async (req, res) => {
-  const { name, description, startDate, endDate, creator_name } = req.body;
-  const tasks = new Tasks({
-    name,
-    description,
-    startDate,
-    endDate,
-    creator_name,
-  });
-
-  await tasks.save();
-
-  res.status(200).json({
-    tasks,
-  });
-};
-
-
-export const taskUpdate = async (req, res) => {
+export const listTasks = async (req = request, res = response) => {
   try {
-    const { name, description, startDate, endDate, creator_name } = req.body;
-    const { id } = req.params;
-    const task = await Tasks.findById(id); // Cambiado de 'tasks' a 'task'
+    const { limit, from } = req.params;
+    const query = { status: { $ne: "deleted" } };
 
-    if (!task) {
-      return res.status(404).json({ msg: 'Task not found' });
-    }
+    const [total, tasks] = await Promise.all([
+      Tasks.countDocuments(query),
+      Tasks.find(query).skip(Number(limit)).limit(Number(from)),
+    ]);
 
-    if (name) task.name = name;
-    if (description) task.description = description;
-    if (startDate) task.startDate = startDate;
-    if (endDate) task.endDate = endDate;
-    if (creator_name) task.creator_name = creator_name;
-
-    await task.save();
-
-    return res.status(200).json({
-      msg: 'The task has been updated',
-      task,
+    res.status(200).json({
+      total,
+      tasks,
     });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).send('The task has not been updated');
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      msg: "An unexpected error occurred during task list.",
+    });
   }
 };
 
-
-export const taskDelete = async (req, res) => {
+export const createTask = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { name, description, endDate, creator_name } = req.body;
+    const tasks = new Tasks({
+      name,
+      description,
+      endDate,
+      creator_name,
+    });
+    await tasks.save();
 
-    const task = await Tasks.findByIdAndUpdate(id, {status: "complete"});
-    res.status(200).json({
-      msg: "The task has been delete",
-      task
+    res.status(201).json({
+      msg: "Task registered in the database!",
+      tasks,
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      msg: "An unexpected error occurred during task creation.",
+    });
+  }
+};
+
+export const editTask = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { ...rest } = req.body;
+    const updatedTask = await Tasks.findByIdAndUpdate(id, rest, { new: true });
+    await updatedTask.save();
+    res.status(201).json({
+      msg: "Task successfully updated!",
+      updatedTask,
     });
   } catch (e) {
     console.log(e);
-    return res.status(500).send("The task has not ben elemete");
+    return res.status(500).json({ msg: "Error changing status." });
+  }
+};
+
+export const completeTask = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const task = await Tasks.findById(id);
+
+    const newStatus = task.status === "incomplete" ? "complete" : "incomplete";
+    task.status = newStatus;
+    await task.save();
+
+    res.status(200).json({
+      msg: "Task status updated successfully!",
+      task,
+    });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send("Error updating the status");
+  }
+};
+
+export const deleteTask = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const task = await Tasks.findByIdAndUpdate(
+      id,
+      { status: "deleted" },
+      { new: true }
+    );
+    res.status(200).json({
+      msg: "task deleted!",
+      task,
+    });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send("Error deleting task");
   }
 };
