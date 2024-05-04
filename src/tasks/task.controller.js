@@ -84,11 +84,7 @@ export const completeTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
   try {
     const id = req.params.id;
-    const task = await Tasks.findByIdAndUpdate(
-      id,
-      { status: "deleted" },
-      { new: true }
-    );
+    const task = await Tasks.findByIdAndDelete(id);
     res.status(200).json({
       msg: "task deleted!",
       task,

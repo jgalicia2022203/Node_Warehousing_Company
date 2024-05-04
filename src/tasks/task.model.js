@@ -19,7 +19,7 @@ const taskSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["complete", "incomplete", "deleted"],
+    enum: ["complete", "incomplete"],
     default: "incomplete",
   },
   creator_name: {
